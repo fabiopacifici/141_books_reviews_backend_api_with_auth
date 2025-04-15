@@ -3,6 +3,8 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const BooksRouter = require('./routes/books.js');
+const serverError = require('./middleware/serverError.js');
+const notFound = require('./middleware/notFound.js');
 
 // 👉 Middleware
 // cors middleware
@@ -23,15 +25,10 @@ app.use('/api/v1/books', BooksRouter);
 
 
 // Middleware for serve errors
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send('Something broke!');
-});
+app.use(serverError);
 
 // Middleware for 404 errors
-app.use((req, res, next) => {
-  res.status(404).send('Sorry, that route does not exist!');
-});
+app.use(notFound);
 
 
 // 👉 Start the server
