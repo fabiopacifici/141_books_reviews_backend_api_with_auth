@@ -8,7 +8,9 @@ const notFound = require('./middleware/notFound.js');
 
 // 👉 Middleware
 // cors middleware
-app.use(cors({ origin: process.env.FRONT_URL || 'http://localhost:5173' }));
+app.use(cors({
+  origin: '*'
+}));
 // body parser middleware
 app.use(express.json());
 // static assets middleware
