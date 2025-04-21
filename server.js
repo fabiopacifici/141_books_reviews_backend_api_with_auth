@@ -27,6 +27,30 @@ app.use('/api/v1/books', BooksRouter);
 
 
 
+// Autherntication routes
+app.post('/register', (req, res) => {
+
+  // get the data fro mthe body
+  const data = req.body;
+  console.log(data, 'registering...');
+
+  res.json(data)
+
+})
+
+app.post('/login', (req, res) => {
+
+  // get the data fro mthe body
+  const data = req.body;
+  console.log(data);
+
+  res.json(data)
+
+
+})
+
+
+
 
 
 // Middleware for serve errors
