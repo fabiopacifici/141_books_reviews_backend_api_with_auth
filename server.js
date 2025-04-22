@@ -6,11 +6,28 @@ const BooksRouter = require('./routes/books.js');
 const serverError = require('./middleware/serverError.js');
 const notFound = require('./middleware/notFound.js');
 
+// Auth dependencies
+const session = require('express-session');
+const passport = require('passport');
+const initializePassport = require('./auth/passport-config.js');
+
+initializePassport(passport);
+app.use(session({
+
+  secret: 'your_secret_key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false }
+}))
+
+
 // 👉 Middleware
 // cors middleware
 app.use(cors({
-  origin: '*'
+  origin: 'http://localhost:5174', // Allow requests from your React app myfront.dev
+  credentials: true,
 }));
+
 // body parser middleware
 app.use(express.json());
 // static assets middleware
@@ -28,24 +45,13 @@ app.use('/api/v1/books', BooksRouter);
 
 
 // Autherntication routes
-app.post('/register', (req, res) => {
-
-  // get the data fro mthe body
-  const data = req.body;
-  console.log(data, 'registering...');
-
-  res.json(data)
-
+app.post('/register', passport.authenticate('register'), (req, res) => {
+  return res.json({ message: 'Registered successfully', user: req.user });
 })
 
-app.post('/login', (req, res) => {
+app.post('/login', passport.authenticate('login'), (req, res) => {
 
-  // get the data fro mthe body
-  const data = req.body;
-  console.log(data);
-
-  res.json(data)
-
+  return res.json({ message: 'Logged in successfully', user: req.user });
 
 })
 
