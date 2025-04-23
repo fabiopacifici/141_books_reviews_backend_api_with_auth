@@ -1,5 +1,7 @@
 const connection = require('../database/db.js')
 
+
+// Index route for books
 function index(req, res) {
 
   // add sql query to get all books
@@ -18,6 +20,7 @@ function index(req, res) {
 }
 
 
+// Show route for single book
 function show(req, res) {
 
   // take the id from the params
@@ -72,8 +75,32 @@ function storeReview(req, res) {
 }
 
 
+function create(req, res) {
+
+  console.log(req.body, req.file);
+
+  // Get the data from the request
+  const { title, author, abstract } = req.body
+  const cover_image = req.file.filename
+
+  // prepare the sql query to insert the book
+  const sql = 'INSERT INTO books (title, author, abstract, cover_image) VALUES (?, ?, ?, ?)'
+  const values = [title, author, abstract, cover_image]
+
+  connection.query(sql, values, (err, results) => {
+    if (err) return res.status(500).json({ success: false, error: err.message })
+
+    console.log(results);
+    return res.status(201).json({ success: true, message: 'Book created successfully', bookId: results.insertId })
+
+  })
+
+}
+
+
 module.exports = {
   index,
   show,
-  storeReview
+  storeReview,
+  create
 }
