@@ -36,6 +36,12 @@ Indice:
     - [Mantenere l'utente connesso con localStorage](#mantenere-lutente-connesso-con-localstorage)
     - [Modifiche alla pagina Admin](#modifiche-alla-pagina-admin)
     - [Aggiornare l'header](#aggiornare-lheader)
+  - [8. BACKEND: Handling File Uploads for Book Covers](#8-backend-handling-file-uploads-for-book-covers)
+  - [1. Install Multer (Backend)](#1-install-multer-backend)
+    - [2. Configure Multer Storage (Backend)](#2-configure-multer-storage-backend)
+    - [3. Create the Route Handler (Backend)](#3-create-the-route-handler-backend)
+    - [4. Implement Controller Method (Backend)](#4-implement-controller-method-backend)
+    - [5. Create React Form Component (Frontend)](#5-create-react-form-component-frontend)
 
 ---
 
@@ -800,3 +806,169 @@ export default function Header() {
 }
 
 ```
+
+## 8. BACKEND: Handling File Uploads for Book Covers
+
+## 1. Install Multer (Backend)
+
+First, install multer in your backend project:
+
+```bash
+npm install multer
+
+```
+
+### 2. Configure Multer Storage (Backend)
+
+In your books.js routes file, configure multer with a storage engine:
+
+```js
+// filepath: backend_api/routes/books.js
+const multer = require('multer')
+
+// Configure storage engine
+const storage = multer.diskStorage({
+  // Set upload directory
+  destination: 'public/images',
+  // Set file naming function
+  filename: (req, file, cb) => {
+    const fileName = `${Date.now()}-${file.originalname}`
+    cb(null, fileName)
+  }
+})
+
+// Create multer instance with configured storage
+const upload = multer({ storage: storage })
+```
+
+This configuration:
+
+Creates a storage engine for multer
+Sets the upload directory to 'public/images'
+Generates unique filenames using timestamps
+
+### 3. Create the Route Handler (Backend)
+
+Add the route with multer middleware in your books.js:
+
+```js
+// filepath: backend_api/routes/books.js
+// upload.single('cover_image') handles a single file upload
+// 'cover_image' must match the field name in your form
+router.post('/create', upload.single('cover_image'), BookController.create)
+```
+
+### 4. Implement Controller Method (Backend)
+
+Add the create method in your BookController.js:
+  
+```js
+// filepath: backend_api/controllers/BookController.js
+function create(req, res) {
+  // Get form data from request body
+  const { title, author, abstract } = req.body
+  // Get uploaded file name from multer
+  const cover_image = req.file.filename 
+
+  // SQL query to insert book
+  const sql = 'INSERT INTO books (title, author, abstract, cover_image) VALUES (?, ?, ?, ?)'
+  const values = [title, author, abstract, cover_image]
+
+  // Execute query
+  connection.query(sql, values, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message })
+    
+    return res.status(201).json({ 
+      message: 'Book created successfully', 
+      bookId: results.insertId 
+    })
+  })
+}
+  
+```
+
+### 5. Create React Form Component (Frontend)
+
+Create a form component that handles file uploads:
+
+```jsx
+// filepath: books_frontend/src/pages/admin/CreateBook.jsx
+import { useState } from 'react';
+
+const CreateBook = () => {
+  // Form state
+  const [formData, setFormData] = useState({
+    title: '',
+    abstract: '',
+    author: '',
+    cover_image: ''
+  });
+
+  // Handle form submission
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    // Create FormData object for multipart/form-data
+    const formDataToSend = new FormData();
+    
+    // Append form fields
+    formDataToSend.append('title', formData.title);
+    formDataToSend.append('abstract', formData.abstract);
+    formDataToSend.append('author', formData.author);
+    formDataToSend.append('cover_image', formData.cover_image);
+
+    // Send request
+    fetch('http://localhost:3000/api/v1/books/create', {
+      method: 'POST',
+      credentials: 'include',
+      // Don't set Content-Type - browser will set it with boundary
+      body: formDataToSend
+    })
+      .then(res => res.json())
+      .then(data => {
+        console.log(data, 'Book created successfully!');
+      })
+      .catch(err => {
+        console.error('Error creating book:', err);
+      });
+  }
+
+  return (
+    <form onSubmit={handleSubmit} encType="multipart/form-data">
+      {/* Text inputs */}
+      <input
+        type="text"
+        name="title"
+        onChange={(e) => setFormData({...formData, title: e.target.value})}
+      />
+      {/* File input */}  
+      <input
+        type="file"
+        name="cover_image"
+        onChange={(e) => setFormData({...formData, cover_image: e.target.files[0]})}
+      />
+      <button type="submit">Create Book</button>
+    </form>
+  );
+};
+```
+
+Key Points to Remember
+Backend Setup:
+
+Install and configure multer
+Set up storage engine with destination and filename settings
+Use multer middleware in route handler
+Access uploaded file via req.file in controller
+Frontend Setup:
+
+Use FormData to send multipart/form-data
+Don't manually set Content-Type header
+Handle file input with e.target.files[0]
+Set encType="multipart/form-data" on form
+File Handling:
+
+Files are saved to 'public/images'
+Filenames include timestamps to prevent collisions
+Only the filename is stored in database
+Full path must be constructed when serving images
